@@ -60,13 +60,22 @@
 
   <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model $(arg ns1) -param robot_description -x -5 -y 7 -Y 3.14 -z 0.05"/>
+	args="-urdf -model $(arg ns1) -param robot_description -x -5 -y 7 -Y 3.14 -z 0.25"/>
+
+    <rosparam file="$(find exp_assignment2)/config/motors_config.yaml" command="load" />
+
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args="--namespace=$(arg ns1)
+        joint_state_controller
+        joint1_position_controller
+        --shutdown-timeout 3">
+    </node>
   </group>
   
   <group ns="$(arg ns2)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z 0.25"/>
-	<node name="position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
+    <node name="position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
+    
   </group>
-
+  
 </launch>
