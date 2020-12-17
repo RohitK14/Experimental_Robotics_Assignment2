@@ -69,6 +69,7 @@
         joint1_position_controller
         --shutdown-timeout 3">
     </node>
+    <node name="robot_following" pkg="exp_assignment2" type="robot_following.py" output="screen" />
   </group>
   
   <group ns="$(arg ns2)">
@@ -76,6 +77,7 @@
 	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z 0.25"/>
     <node name="position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
     <node name="position_client" pkg="exp_assignment2" type="human_command.py" output="screen" />
+    
   </group>
   
 </launch>

@@ -38,6 +38,7 @@ class image_feature:
         self.subscriber = rospy.Subscriber("camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
 
+        #self.camera_pub = rospy.Publisher("")
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -53,7 +54,7 @@ class image_feature:
 
         blurred = cv2.GaussianBlur(image_np, (11, 11), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, orangeLower, orangeUpper)
+        mask = cv2.inRange(hsv, greenLower, greenUpper)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
         #cv2.imshow('mask', mask)
@@ -89,7 +90,7 @@ class image_feature:
 
         else:
             vel = Twist()
-            vel.angular.z = 0.5
+            vel.angular.z = 2
             self.vel_pub.publish(vel)
 
         cv2.imshow('window', image_np)

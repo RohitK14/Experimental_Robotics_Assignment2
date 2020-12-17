@@ -135,7 +135,9 @@
     </visual>
   </link>
 
-
+  <!--###############################################
+                Joint definitions
+  ####################################################-->
   <joint name="joint_back_right_wheel" type="continuous">
     <origin rpy="0 0 0" xyz="-0.20 0.15 0"/>
     <child link="link_back_right_wheel"/>
@@ -224,28 +226,6 @@
       <material name="red" />
   	</visual>
   </link>
-  
-  <link name="camera_link">
-  	<inertial>
-  		<mass value="0.001"/>
-  		<origin xyz="0 0 0" rpy="0 0 0" />
-  		<inertia ixx="0.00000416666667" ixy="0" ixz="0" iyy="0.00000416666667" iyz="0" izz="0.00000416666667"/>
-  	</inertial>
-  	<collision>
-  	  <origin xyz="0 0 0.025" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.05 0.05 0.05"/>
-      </geometry>
-  	</collision>
-  	<visual>
-  	  <origin xyz="0 0 0.025" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.05 0.05 0.05"/>
-      </geometry>
-      <material name="white" />
-  	</visual>
-  </link>
-
   <joint name="neck_joint" type="revolute">
   	<axis xyz="0 0 1"/>
   	<limit effort="1000.0" lower="-6.28" upper="6.28" velocity="0.2"/>
@@ -253,10 +233,31 @@
   	<parent link="neck_base_link"/>
   	<child link="neck_link"/>
   </joint>
-  
+
+
+  <link name="camera_link">
+  	<inertial>
+  		<mass value="0.001"/>
+  		<origin xyz="0 0 0" rpy="0 0 0" />
+  		<inertia ixx="0.00000416666667" ixy="0" ixz="0" iyy="0.00000416666667" iyz="0" izz="0.00000416666667"/>
+  	</inertial>
+  	<collision>
+  	  <origin xyz="0.05 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.15 0.05 0.05"/>
+      </geometry>
+  	</collision>
+  	<visual>
+  	  <origin xyz="0.05 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.15 0.05 0.05"/>
+      </geometry>
+      <material name="white" />
+  	</visual>
+  </link>
 
   <joint name="camera_joint" type="fixed">
-  	<origin rpy="0 0 0" xyz="0.0 0 0.25"/>
+  	<origin rpy="0 0 0" xyz="0 0 0.25"/>
   	<parent link="neck_link"/>
   	<child link="camera_link"/>
   </joint>
