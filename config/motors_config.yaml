@@ -5,5 +5,5 @@
   joint1_position_controller:
     type: effort_controllers/JointPositionController
     joint: neck_joint
-    pid: {p: 0.1, i: 0.0, d: 0.5}
+    pid: {p: 0.1, i: 0.0, d: 0.0}
 

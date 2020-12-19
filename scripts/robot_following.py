@@ -20,6 +20,8 @@ import rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
+from std_msgs.msg import Float64
 
 VERBOSE = False
 
@@ -38,7 +40,8 @@ class image_feature:
         self.subscriber = rospy.Subscriber("camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
 
-        #self.camera_pub = rospy.Publisher("")
+        self.camera_pub = rospy.Publisher("joint1_position_controller/command", 
+                                          Float64, queue_size=1)
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''

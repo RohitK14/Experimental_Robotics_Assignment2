@@ -17,7 +17,7 @@ import random
 
 def command(flag=0):
 
-    client = actionlib.SimpleActionClient('/reaching_goal', exp_assignment2.msg.PlanningAction)
+    client = actionlib.SimpleActionClient('reaching_goal', exp_assignment2.msg.PlanningAction)
 
     client.wait_for_server()
 
