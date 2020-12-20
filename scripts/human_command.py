@@ -38,10 +38,19 @@ def command(flag=0):
 
 
 
+def time_counter(seconds):
+	""" Function to wait the specified seconds
+	"""
+	start_time = time.time()
+	my_time = 0
+	while (my_time < seconds):
+		my_time = time.time()-start_time
+
 def main():
 
     rospy.init_node('human_command')
-    time.sleep(5)
+    # command(1)
+    # time_counter(10)
     while True:
         n_play = random.randint(2,5)
         time_bw_calls = random.randint(20,30)
@@ -50,10 +59,10 @@ def main():
         while i <= n_play:
             print('Play: %d' %i )
             command()
-            time.sleep(10)
+            time_counter(15)
             i = i+1
         command(1)
-        time.sleep(time_bw_calls)
+        time_counter(time_bw_calls)
 
 if __name__ == "__main__":
     main()

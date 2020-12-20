@@ -48,49 +48,36 @@ import math
 import actionlib
 import actionlib.msg
 import exp_assignment2.msg
+
+# Python libs
+import sys
 import time
-import random
+# numpy and scipy
+import numpy as np
+from scipy.ndimage import filters
+
+import imutils
+
+# OpenCV
+import cv2
+
+# Ros libraries
+import roslib
+# Ros Messages
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Float64
 
 
-global reached, command
-command = None
-width =0
-height=0
-tired_level=0
 home_fixed=Point()
-
-width = rospy.get_param('world_width',20)
-height = rospy.get_param('world_height',20)
-speed = rospy.get_param('fast',1)    
 home_fixed.x = rospy.get_param('home_x',0)
 home_fixed.y = rospy.get_param('home_y',0)
 tired_level = rospy.get_param('tireness_level',5)
 prev_pos = Point()
 
-##
-#   brief reachCallback is a callback for the rostopic /Reached
-#   \param x [std_msgs/Bool] is the confirmation that the robot reached the position
-def reachCallback(x):
-    global reached 
-    reached = x.data
+global found_image
 
-##
-#   brief commandCallback is a callback for the rostopic /command
-#   \param x [std_msgs/Strings] is the command to call the robot for playing with the person
-def commandCallback(str_play):
-    global command 
-    command = str_play.data
-##
-#   \class Normal
-#   \brief This class defines the state of the state machine corresponding to the robot 
-#   randomly moving in the 2D plane.
-#
-#   It is a inheritance from smach and the state is added to the smach_state.
-#   In this state the robot moves around randomly by subscribing to 
-#   the rostopic /moveToPose. 
-#   It has a function execute() providing the intended behavior. 
 
-# define state Normal
+
 class Normal(smach.State):
     ##
     #   \brief __init__ initialises the Normal state in the smach_state
@@ -99,9 +86,41 @@ class Normal(smach.State):
     #   \param output_keys These are possible outputs of the state.
     def __init__(self):
         smach.State.__init__(self, 
-                            outcomes=['go_sleep','start_play'])
-        self.client = actionlib.SimpleActionClient('/robot/reaching_goal', exp_assignment2.msg.PlanningAction)
+                            outcomes=['go_sleep'],
+                            input_keys=['normal_tired_counter_in'],
+                            output_keys=['normal_tired_counter_out'])
+        self.client = actionlib.SimpleActionClient('/robot/reaching_goal', 
+                                                exp_assignment2.msg.PlanningAction)
+        # self.subscriber = rospy.Subscriber("/robot/camera1/image_raw/compressed",
+        #                                    CompressedImage, self.callback,  queue_size=1)
+        # self,found_image = rospy.Publisher("/found_img",Bool)
+    def callback(self, ros_data):
+        '''Callback function of subscribed topic. 
+        Here images get converted and features detected'''
         
+        #### direct conversion to CV2 ####
+        np_arr = np.fromstring(ros_data.data, np.uint8)
+        image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV >= 3.0:
+
+        greenLower = (50, 50, 20)
+        greenUpper = (70, 255, 255)
+
+        blurred = cv2.GaussianBlur(image_np, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, greenLower, greenUpper)
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
+        #cv2.imshow('mask', mask)
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        
+        if len(cnts) > 0:
+            global found_image 
+            found_image = 1
+        else:
+            global found_image
+            found_image = 0
 
     def execute(self, userdata):
         ##
@@ -110,35 +129,32 @@ class Normal(smach.State):
         #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
         #   Otherwise the robot goes to "Sleep" state after it gets tired
         while not rospy.is_shutdown():
-            
             rospy.loginfo('Executing state Normal')
-            global command
-            if command=="play":
-                print('Command of playing received. Going to Play mode.')
-                command = None
-
-                return 'start_play'
-            else:
-                if userdata.normal_tired_counter_in >= tired_level:
-                    print('Robot is tired. Going to sleep...')
-                    return 'go_sleep'
-                else:
-                    if command=="play":
-                        print('Command received while reaching the position')
-                        print('Going to play mode')
-                        return 'start_play'
-                    random_pos = Point()
-                    random_pos.x = random.randint(0,width)
-                    random_pos.y = random.randint(0,height)
-                    self.pub.publish(random_pos)
-                    a = np.array((random_pos.x,random_pos.y))
-                    b = np.array((prev_pos.x,prev_pos.y))
-                    t = np.linalg.norm(a-b)/speed
-                    rospy.sleep(t)
-                    prev_pos = random_pos
-                    print('Location: ',random_pos,'reached in time',t)
-                    userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
-                    print('Tireness level of the robot: ',userdata.normal_tired_counter_in)
+            # global found_image
+            # if found_image==1:
+            #     print('Found the ball. Going to Play mode')
+            #     return 'start_play'
+            # else:
+            #     global found_image
+            #     if found_image==1:
+            #         print('Found the ball. Going to Play mode')
+            #        return 'start_play'
+                #Random positions for the robot to move
+            self.client.wait_for_server()
+            goal = exp_assignment2.msg.PlanningGoal()
+            goal.target_pose.pose.position.x = random.randint(-7,7)
+            goal.target_pose.pose.position.y = random.randint(-7,7)
+            print('Robot going to: ',goal.target_pose.pose.position.x,
+                    ',',goal.target_pose.pose.position.y)
+            self.client.send_goal(goal)
+            self.client.wait_for_result()
+            print(self.client.get_result())
+            userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
+            if userdata.normal_tired_counter_in >= tired_level:
+                print('Robot is tired. Going to sleep...')
+                return 'go_sleep'
+                
+                    
 
 
 # define state Sleep
@@ -150,11 +166,9 @@ class Sleep(smach.State):
     #   \param output_keys These are possible outputs of the state.
     def __init__(self):
         smach.State.__init__(self, 
-                            outcomes=['wake_up'],
-                            input_keys=['sleep_timer_in'],
-                            output_keys=['sleep_timer_out'])
-        self.pub = rospy.Publisher('/moveToPose', Point, queue_size=10)
-        self.isReached = rospy.Subscriber('/Reached',Bool,reachCallback)
+                            outcomes=['wake_up'])
+        self.client = actionlib.SimpleActionClient('/robot/reaching_goal', 
+                                                exp_assignment2.msg.PlanningAction)    
     def execute(self, userdata):
         ##
         #   \brief In this execute() function, the robot goes to predefined home_fixed position
@@ -164,66 +178,153 @@ class Sleep(smach.State):
         #   Otherwise the robot goes to "Sleep" state after it gets tired
 
         rospy.loginfo('Executing state Sleep')
-        self.pub.publish(home_fixed)
+        self.client.wait_for_server()
+        goal = exp_assignment2.msg.PlanningGoal()
+        goal.target_pose.pose.position.x = home_fixed.x
+        goal.target_pose.pose.position.y = home_fixed.y
         print('Sleeping at location: ',home_fixed.x,',',home_fixed.y)
+        self.client.send_goal(goal)
+        self.client.wait_for_result()
+        print(self.client.get_result())
         rospy.sleep(10)
         print('I am awake now')
-        userdata.sleep_timer_out = 0
         return 'wake_up'
 
-# define state Play
-class Play(smach.State):
-    ##
-    #   \brief __init__ initializes the Play state with the outcome go_to_normal.
-    #   \param  outcomes lists the possible transitions. From play we can go to normal state.
-    #   \param input_keys It is the possible input of the state
-    #   \pram output keys It is the possible output of the state
+
+VERBOSE = False
+
+class image_feature:
+
     def __init__(self):
-        smach.State.__init__(self, 
-                            outcomes=['go_to_normal'],
-                            input_keys=['play_timer_in'],
-                            output_keys=['play_timer_out'])
-        self.pub = rospy.Publisher('/moveToPose', Point, queue_size=10)
-    def execute(self, userdata):
-        ##
-        #   In this execute(), we implement play behavior.
-        #   A random position is generated for a person. The robot goes to the person, waits for the gesture and 
-        #   and goes to gesture position.
-        #   the robot goes and comes back to the gesture position and waits for another gesture position until 
-        #   it gets tired.
-        #   At last the robot goes to Normal position.
-        
-        rospy.loginfo('Executing state Play')
-        person = Point()
-        person.x = random.randint(0,width)
-        person.y = random.randint(0,height)
-        print('Person called from position: ',person)
-        print('Going to man position.')
-        self.pub.publish(person)
-        rospy.sleep(20)
-        print('Reached man!!')
-        print("We will play " + str(tired_level) + " times")
-        while not rospy.is_shutdown():
-            if userdata.play_timer_in >= tired_level:
-                print('Robot tired. Going to Normal mode')
-                return 'go_to_normal'
+        '''Initialize ros publisher, ros subscriber'''
+        rospy.init_node('image_feature', anonymous=True)
+     # topic where we publish
+        self.image_pub = rospy.Publisher("/output/image_raw/compressed",
+                                         CompressedImage, queue_size=1)
+        self.vel_pub = rospy.Publisher("cmd_vel",
+                                       Twist, queue_size=1)
+
+        # subscribed Topic
+        self.subscriber = rospy.Subscriber("camera1/image_raw/compressed",
+                                           CompressedImage, self.callback,  queue_size=1)
+
+        self.camera_pub = rospy.Publisher("joint1_position_controller/command", 
+                                          Float64, queue_size=1)
+        self.flag_arrive = False
+    def callback(self, ros_data):
+        '''Callback function of subscribed topic. 
+        Here images get converted and features detected'''
+        if VERBOSE:
+            print ('received image of type: "%s"' % ros_data.format)
+
+        #### direct conversion to CV2 ####
+        np_arr = np.fromstring(ros_data.data, np.uint8)
+        image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV >= 3.0:
+
+        greenLower = (50, 50, 20)
+        greenUpper = (70, 255, 255)
+
+        blurred = cv2.GaussianBlur(image_np, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, greenLower, greenUpper)
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
+        #cv2.imshow('mask', mask)
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        center = None
+        # only proceed if at least one contour was found
+        if len(cnts) > 0:
+            # find the largest contour in the mask, then use
+            # it to compute the minimum enclosing circle and
+            # centroid
+            
+            c = max(cnts, key=cv2.contourArea)
+            ((x, y), radius) = cv2.minEnclosingCircle(c)
+            M = cv2.moments(c)
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+
+            # only proceed if the radius meets a minimum size
+            if radius > 10:
+                # draw the circle and centroid on the frame,
+                # then update the list of tracked points
+                cv2.circle(image_np, (int(x), int(y)), int(radius),
+                           (0, 255, 255), 2)
+                cv2.circle(image_np, center, 5, (0, 0, 255), -1)
+                vel = Twist()
+                vel.angular.z = 0.005*(center[0]-400)
+                vel.linear.x = -0.01*(radius-200)
+                self.camera_pub.publish(0)
+                self.vel_pub.publish(vel)
+
+                #Rotate head +45 and -45 degrees 
+                ##
+                if self.flag_arrive == False and abs(radius-200) < 2:
+                    vel.linear.x = 0
+                    vel.angular.z = 0
+                    self.vel_pub.publish(vel)
+                    cam_angle = Float64()
+                    cam_angle.data = -math.pi/4
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    cv2.waitKey(1)
+                    time.sleep(1)
+                    cam_angle.data = math.pi/4
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    cv2.waitKey(1)
+                    time.sleep(1)
+                    cam_angle.data = 0.0
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    
+                    time.sleep(1)
+                    self.flag_arrive = True
+                    
             else:
-                gesture = Point()
-                gesture.x = random.randint(0,width)
-                gesture.y = random.randint(0,height)
-                print('Gesture command: ',gesture)
-                self.pub.publish(gesture)
-                a = np.array((gesture.x,gesture.y))
-                b = np.array((person.x,person.y))
-                t = np.linalg.norm(a-b)/speed
-                rospy.sleep(t)
-                print('Reached the gesture position. Going back to person',person)
-                self.pub.publish(person)
-                rospy.sleep(t)  
-                userdata.play_timer_out = userdata.play_timer_in+1
-                print('Tireness level of the robot: ',userdata.play_timer_in) 
-                print('Waiting for next gesture location.')
-                rospy.sleep(5)       
+                vel = Twist()
+                self.camera_pub.publish(0)
+                vel.linear.x = 0.5
+                self.vel_pub.publish(vel)
+        else:
+            vel = Twist()
+            vel.angular.z = 1
+            print('rotate the robot')
+            self.vel_pub.publish(vel)
+            self.flag_arrive = False
+
+
+
+        cv2.imshow('window', image_np)
+        cv2.waitKey(2)
+
+        # self.subscriber.unregister()
+
+# define state Play
+# class Play(smach.State):
+#     ##
+#     #   \brief __init__ initializes the Play state with the outcome go_to_normal.
+#     #   \param  outcomes lists the possible transitions. From play we can go to normal state.
+#     #   \param input_keys It is the possible input of the state
+#     #   \pram output keys It is the possible output of the state
+#     def __init__(self):
+#         smach.State.__init__(self, 
+#                             outcomes=['go_to_normal'])
+#     def execute(self, userdata):
+#         ##
+#         #   In this execute(), we implement play behavior.
+#         #   A random position is generated for a person. The robot goes to the person, waits for the gesture and 
+#         #   and goes to gesture position.
+#         #   the robot goes and comes back to the gesture position and waits for another gesture position until 
+#         #   it gets tired.
+#         #   At last the robot goes to Normal position.
+        
+#         rospy.loginfo('Executing state Play')
+#         ic = image_feature()
+
+#         return 'go_to_normal'
+                  
 
 # main
 def main():
@@ -246,13 +347,14 @@ def main():
         smach.StateMachine.add('SLEEP', Sleep(), 
                                transitions={'wake_up':'NORMAL'})
 
-        smach.StateMachine.add('PLAY', Play(), 
-                               transitions={'go_to_normal':'NORMAL'})
+        # smach.StateMachine.add('PLAY', Play(), 
+        #                        transitions={'go_to_normal':'NORMAL'})
     sis = smach_ros.IntrospectionServer('robot_behavior', sm, '/SM_ROOT')
     sis.start()
     # Execute SMACH plan
     outcome = sm.execute()
     rospy.spin()
+    cv2.destroyAllWindows()
     sis.stop()
 if __name__ == '__main__':
     main()

@@ -58,9 +58,29 @@
   <node name="urdf_spawner_human1" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
         args="-urdf -model human1 -param human_description1 -x -7 -y 7 -z 0.34 -R 0 -P 0 -Y 0"/>
 
+
+    <!-- Parameters to define the sleeping position -->
+    <param name="home_x" value="5" />
+    <param name="home_y" value="7" />
+    <!-- Parameter to speed the motion while navigating -->
+    <param name="tireness_level" value="5" />
+
+
+  
+  <group ns="$(arg ns2)">
+  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z 0.25"/>
+    <node name="ball_position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
+    
+    <node name="position_client" pkg="exp_assignment2" type="human_command.py" output="screen" />
+    -->
+  </group>
+
+
+
   <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model $(arg ns1) -param robot_description -x 5 -y 7 -Y 3.14 -z 0.25"/>
+	args="-urdf -model $(arg ns1) -param robot_description -x 5 -y 7 -Y 3.14 -z -2.25"/>
     <node name="robot_position_server" pkg="exp_assignment2" type="go_to_point_robot.py" output="screen" />
     <rosparam file="$(find exp_assignment2)/config/motors_config.yaml" command="load" />
 
@@ -73,13 +93,5 @@
     <node name="robot_following" pkg="exp_assignment2" type="robot_following.py" output="screen" />
     
   </group>
-  
-  <group ns="$(arg ns2)">
-  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z 0.25"/>
-    <node name="ball_position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
-    <node name="position_client" pkg="exp_assignment2" type="human_command.py" output="screen" />
-    
-  </group>
-  
+
 </launch>

@@ -26,6 +26,13 @@ import math
 
 VERBOSE = False
 
+def wait_time(seconds):
+	""" Function to wait the specified seconds
+	"""
+	start_time = time.time()
+	my_time = 0
+	while (my_time < seconds):
+		my_time = time.time()-start_time
 class image_feature:
 
     def __init__(self):
@@ -87,13 +94,13 @@ class image_feature:
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 vel = Twist()
                 vel.angular.z = 0.005*(center[0]-400)
-                vel.linear.x = -0.01*(radius-200)
+                vel.linear.x = -0.01*(radius-150)
                 self.camera_pub.publish(0)
                 self.vel_pub.publish(vel)
 
                 #Rotate head +45 and -45 degrees 
                 ##
-                if self.flag_arrive == False and abs(radius-200) < 2:
+                if self.flag_arrive == False and vel.linear.x < 0.05:
                     vel.linear.x = 0
                     vel.angular.z = 0
                     self.vel_pub.publish(vel)
@@ -114,32 +121,6 @@ class image_feature:
                     
                     time.sleep(1)
                     self.flag_arrive = True
-                    # angle = 0.0
-                    # cam_angle = Float64()
-                    # while angle < 0.78:
-                    #     angle = angle + 0.1
-                    #     cam_angle.data = angle
-                    #     self.camera_pub.publish(cam_angle)
-                    #     cv2.imshow('window', image_np)
-                    #     cv2.waitKey(2)
-                    #     time.sleep(1)
-                    # #Move to the other side 45 degrees
-                    # while angle > -0.78:
-                    #     angle = angle - 0.1
-                    #     cam_angle.data = angle
-                    #     self.camera_pub.publish(cam_angle)
-                    #     cv2.imshow('window', image_np)
-                    #     cv2.waitKey(2)
-                    #     time.sleep(1)
-
-					# #Come back to centered position
-                    # while angle < -0.1:
-                    #     angle = angle + 0.1
-                    #     cam_angle.data = angle
-                    #     self.camera_pub.publish(cam_angle)
-                    #     cv2.imshow('window', image_np)
-                    #     cv2.waitKey(2)
-                    #     time.sleep(1)
                     
             else:
                 vel = Twist()
@@ -148,8 +129,7 @@ class image_feature:
                 self.vel_pub.publish(vel)
         else:
             vel = Twist()
-            vel.angular.z = 1
-            print('rotate the robot')
+            vel.angular.z = 2
             self.vel_pub.publish(vel)
             self.flag_arrive = False
 
