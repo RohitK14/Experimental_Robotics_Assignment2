@@ -101,17 +101,17 @@ class image_feature:
                     cam_angle.data = -math.pi/4
                     self.camera_pub.publish(cam_angle)
                     cv2.imshow('window',image_np)
-                    #cv2.waitKey(1)
+                    cv2.waitKey(1)
                     time.sleep(1)
                     cam_angle.data = math.pi/4
                     self.camera_pub.publish(cam_angle)
                     cv2.imshow('window',image_np)
-                    #cv2.waitKey(1)
+                    cv2.waitKey(1)
                     time.sleep(1)
                     cam_angle.data = 0.0
                     self.camera_pub.publish(cam_angle)
                     cv2.imshow('window',image_np)
-                    #cv2.waitKey(1)
+                    
                     time.sleep(1)
                     self.flag_arrive = True
                     # angle = 0.0
@@ -148,7 +148,8 @@ class image_feature:
                 self.vel_pub.publish(vel)
         else:
             vel = Twist()
-            vel.angular.z = 2
+            vel.angular.z = 1
+            print('rotate the robot')
             self.vel_pub.publish(vel)
             self.flag_arrive = False
 
