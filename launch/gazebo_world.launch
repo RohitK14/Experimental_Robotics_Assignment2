@@ -69,9 +69,9 @@
                 joint1_position_controller
               --shutdown-timeout 3">
     </node>
-    <!--
+    
     <node name="robot_following" pkg="exp_assignment2" type="robot_following.py" output="screen" />
-    --> 
+    
   </group>
   
   <group ns="$(arg ns2)">

@@ -44,7 +44,7 @@ def main():
     
     while True:
         n_play = random.randint(2,5)
-        time_bw_calls = random.randint(10,15)
+        time_bw_calls = random.randint(20,30)
         i = 1
         print('We will play %d times' %n_play)
         while i <= n_play:

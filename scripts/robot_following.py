@@ -22,6 +22,7 @@ from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from std_msgs.msg import Float64
+import math
 
 VERBOSE = False
 
@@ -70,6 +71,7 @@ class image_feature:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
             # centroid
+            
             c = max(cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
             M = cv2.moments(c)
@@ -83,18 +85,42 @@ class image_feature:
                            (0, 255, 255), 2)
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 vel = Twist()
-                vel.angular.z = -0.002*(center[0]-400)
-                vel.linear.x = -0.01*(radius-100)
-                self.vel_pub.publish(vel)
-            else:
-                vel = Twist()
-                vel.linear.x = 0.5
+                vel.angular.z = 0.005*(center[0]-400)
+                vel.linear.x = -0.01*(radius-200)
+                self.camera_pub.publish(0)
                 self.vel_pub.publish(vel)
 
+                #Rotate head +45 and -45 degrees 
+                ##
+                
+                if vel.linear.x <= 0.05 and vel.linear.z <= 0.05 and len(cnts)>0:
+                    vel.linear.x = 0
+                    vel.linear.y = 0
+                    vel.linear.z = 0
+                    vel.angular.x = 0
+                    vel.angular.y = 0
+                    vel.angular.z = 0
+                    self.vel_pub.publish(vel) 
+                    self.camera_pub.publish(-math.pi/4)
+                    time.sleep(1)
+                    self.vel_pub.publish(vel)
+                    self.camera_pub.publish(math.pi/4)
+                    time.sleep(1)
+                    self.vel_pub.publish(vel)
+                    self.camera_pub.publish(0)
+                    time.sleep(1)
+                    ##
+            else:
+                vel = Twist()
+                self.camera_pub.publish(0)
+                vel.linear.x = 0.3 
+                self.vel_pub.publish(vel)
         else:
             vel = Twist()
-            vel.angular.z = 2
+            vel.angular.z = -1
+            self.camera_pub.publish(0)
             self.vel_pub.publish(vel)
+
 
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
