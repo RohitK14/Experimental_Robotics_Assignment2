@@ -43,6 +43,7 @@ class image_feature:
 
         self.camera_pub = rospy.Publisher("joint1_position_controller/command", 
                                           Float64, queue_size=1)
+        self.flag_arrive = False
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -92,34 +93,64 @@ class image_feature:
 
                 #Rotate head +45 and -45 degrees 
                 ##
-                
-                if vel.linear.x <= 0.05 and vel.linear.z <= 0.05 and len(cnts)>0:
+                if self.flag_arrive == False and abs(radius-200) < 2:
                     vel.linear.x = 0
-                    vel.linear.y = 0
-                    vel.linear.z = 0
-                    vel.angular.x = 0
-                    vel.angular.y = 0
                     vel.angular.z = 0
-                    self.vel_pub.publish(vel) 
-                    self.camera_pub.publish(-math.pi/4)
-                    time.sleep(1)
                     self.vel_pub.publish(vel)
-                    self.camera_pub.publish(math.pi/4)
+                    cam_angle = Float64()
+                    cam_angle.data = -math.pi/4
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    #cv2.waitKey(1)
                     time.sleep(1)
-                    self.vel_pub.publish(vel)
-                    self.camera_pub.publish(0)
+                    cam_angle.data = math.pi/4
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    #cv2.waitKey(1)
                     time.sleep(1)
-                    ##
+                    cam_angle.data = 0.0
+                    self.camera_pub.publish(cam_angle)
+                    cv2.imshow('window',image_np)
+                    #cv2.waitKey(1)
+                    time.sleep(1)
+                    self.flag_arrive = True
+                    # angle = 0.0
+                    # cam_angle = Float64()
+                    # while angle < 0.78:
+                    #     angle = angle + 0.1
+                    #     cam_angle.data = angle
+                    #     self.camera_pub.publish(cam_angle)
+                    #     cv2.imshow('window', image_np)
+                    #     cv2.waitKey(2)
+                    #     time.sleep(1)
+                    # #Move to the other side 45 degrees
+                    # while angle > -0.78:
+                    #     angle = angle - 0.1
+                    #     cam_angle.data = angle
+                    #     self.camera_pub.publish(cam_angle)
+                    #     cv2.imshow('window', image_np)
+                    #     cv2.waitKey(2)
+                    #     time.sleep(1)
+
+					# #Come back to centered position
+                    # while angle < -0.1:
+                    #     angle = angle + 0.1
+                    #     cam_angle.data = angle
+                    #     self.camera_pub.publish(cam_angle)
+                    #     cv2.imshow('window', image_np)
+                    #     cv2.waitKey(2)
+                    #     time.sleep(1)
+                    
             else:
                 vel = Twist()
                 self.camera_pub.publish(0)
-                vel.linear.x = 0.3 
+                vel.linear.x = 0.5
                 self.vel_pub.publish(vel)
         else:
             vel = Twist()
-            vel.angular.z = -1
-            self.camera_pub.publish(0)
+            vel.angular.z = 2
             self.vel_pub.publish(vel)
+            self.flag_arrive = False
 
 
         cv2.imshow('window', image_np)
@@ -129,6 +160,7 @@ class image_feature:
 
 
 def main(args):
+    
     '''Initializes and cleanup ros node'''
     ic = image_feature()
     try:

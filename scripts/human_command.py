@@ -41,7 +41,7 @@ def command(flag=0):
 def main():
 
     rospy.init_node('human_command')
-    
+    time.sleep(5)
     while True:
         n_play = random.randint(2,5)
         time_bw_calls = random.randint(20,30)
@@ -50,7 +50,7 @@ def main():
         while i <= n_play:
             print('Play: %d' %i )
             command()
-            time.sleep(5)
+            time.sleep(10)
             i = i+1
         command(1)
         time.sleep(time_bw_calls)

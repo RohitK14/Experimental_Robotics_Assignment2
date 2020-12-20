@@ -68,7 +68,7 @@
       </geometry>
       <material name="blue"/>
     </visual>
-    <!-- caster front 
+    <!-- caster front -->
     <collision name="caster_front_collision">
       <origin rpy=" 0 0 0" xyz="0.35 0 -0.05"/>
       <geometry>
@@ -80,7 +80,21 @@
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
-    </visual>-->
+    </visual>
+    <!---->
+    <!-- caster back for support -->
+    <collision name="caster_back_collision">
+      <origin rpy=" 0 0 0" xyz="-0.35 0 -0.05"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <visual name="caster_back_visual">
+      <origin rpy=" 0 0 0" xyz="-0.2 0 -0.05"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </visual>
   </link>
 
   <link name="link_back_right_wheel">
@@ -108,7 +122,7 @@
       <material name="red"/>
     </visual>
   </link>
-
+ <!--
    <link name="link_front_right_wheel">
     <xacro:default_inertial mass="0.2"/>
     <collision name="link_front_right_wheel_collision">
@@ -134,12 +148,12 @@
       <material name="red"/>
     </visual>
   </link>
-
+-->
   <!--###############################################
                 Joint definitions
   ####################################################-->
   <joint name="joint_back_right_wheel" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.20 0.15 0"/>
+    <origin rpy="0 0 0" xyz="-0.0 0.15 0"/>
     <child link="link_back_right_wheel"/>
     <parent link="link_chassis"/>
     <axis rpy="0 0 0" xyz="0 1 0"/>
@@ -149,14 +163,14 @@
   
   
   <joint name="joint_back_left_wheel" type="continuous">
-    <origin rpy="0 0 0" xyz="-0.20 -0.15 0"/>
+    <origin rpy="0 0 0" xyz="-0.0 -0.15 0"/>
     <child link="link_back_left_wheel"/>
     <parent link="link_chassis"/>
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <limit effort="10000" velocity="1000"/>
     <joint_properties damping="1.0" friction="1.0"/>
   </joint>
-
+<!--
   <joint name="joint_front_right_wheel" type="continuous">
     <origin rpy="0 0 0" xyz="0.20 0.15 0"/>
     <child link="link_front_right_wheel"/>
@@ -175,7 +189,7 @@
     <limit effort="10000" velocity="1000"/>
     <joint_properties damping="1.0" friction="1.0"/>
   </joint>
-
+-->
 <!--camera links - neck definition -->
 
   <link name="neck_base_link">

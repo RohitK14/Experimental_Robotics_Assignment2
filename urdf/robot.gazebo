@@ -9,16 +9,28 @@
 
   <gazebo reference="link_back_left_wheel">
     <material>Gazebo/Blue</material>
+    <!--
+    <kp>1000000.0</kp> 
+    <kd>100.0</kd>
+    <mu1>1.0</mu1> 
+    <mu2>1.0</mu2>-->
   </gazebo>
   <gazebo reference="link_back_right_wheel">
     <material>Gazebo/Blue</material>
+    <!--
+    <kp>1000000.0</kp> 
+    <kd>100.0</kd>
+    <mu1>1.0</mu1> 
+    <mu2>1.0</mu2>-->
   </gazebo>
+  <!--
   <gazebo reference="link_front_left_wheel">
     <material>Gazebo/Blue</material>
   </gazebo>
   <gazebo reference="link_front_right_wheel">
     <material>Gazebo/Blue</material>
   </gazebo>
+  -->  
     <gazebo reference="neck_link">
     <material>Gazebo/Red</material>
   </gazebo>
@@ -26,28 +38,30 @@
     <material>Gazebo/Red</material>
   </gazebo>  
 
-<!--
+
   <gazebo>
     <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
       <legacyMode>true</legacyMode>
       <alwaysOn>true</alwaysOn>
-      <updateRate>20</updateRate>
-      <leftJoint>joint_front_left_wheel</leftJoint>
-      <rightJoint>joint_front_right_wheel</rightJoint>
-      <wheelSeparation>0.3</wheelSeparation>
+      <updateRate>100</updateRate>
+      <leftJoint>joint_back_left_wheel</leftJoint>
+      <rightJoint>joint_back_right_wheel</rightJoint>
+      <wheelSeparation>0.2</wheelSeparation>
       <wheelDiameter>0.2</wheelDiameter>
-      <torque>0.1</torque>
+      <torque>10000</torque>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
       <robotBaseFrame>link_chassis</robotBaseFrame>
     </plugin>
   </gazebo>
-  -->
+
+
+<!--
   <gazebo>
     <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
       <updateRate>100.0</updateRate>
-      <legacyMode>false</legacyMode>
+      <legacyMode>true</legacyMode>
       <robotNamespace>/robot</robotNamespace>
       <leftFrontJoint>joint_front_left_wheel</leftFrontJoint>
       <rightFrontJoint>joint_front_right_wheel</rightFrontJoint>
@@ -63,6 +77,7 @@
       <odometryFrame>odom</odometryFrame>
     </plugin>
   </gazebo>
+  -->
   <!-- ros_control plugin -->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
@@ -86,7 +101,7 @@
           <near>0.02</near>
           <far>300</far>
         </clip>
-		<noise>
+		    <noise>
           <type>gaussian</type>
           <mean>0.0</mean>
           <stddev>0.007</stddev>
@@ -111,7 +126,7 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <!--<robotNamespace>/robot</robotNamespace> -->
+      <robotNamespace>/robot</robotNamespace>
       <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
       <legacyModeNS>true</legacyModeNS>
     </plugin>
