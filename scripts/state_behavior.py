@@ -74,9 +74,6 @@ home_fixed.y = rospy.get_param('home_y',0)
 tired_level = rospy.get_param('tireness_level',5)
 prev_pos = Point()
 
-global found_image
-
-
 
 class Normal(smach.State):
     ##
@@ -91,6 +88,8 @@ class Normal(smach.State):
                             output_keys=['normal_tired_counter_out'])
         self.client = actionlib.SimpleActionClient('/robot/reaching_goal', 
                                                 exp_assignment2.msg.PlanningAction)
+        self.client.wait_for_server()
+        self.goal = exp_assignment2.msg.PlanningGoal()
         # self.subscriber = rospy.Subscriber("/robot/camera1/image_raw/compressed",
         #                                    CompressedImage, self.callback,  queue_size=1)
         # self,found_image = rospy.Publisher("/found_img",Bool)
@@ -125,7 +124,7 @@ class Normal(smach.State):
     def execute(self, userdata):
         ##
         #   \brief In this execute() function, the robot randomly walks in the environment until it reaches the tired_level
-        #   The logic used here is that if we receive a command play in the middle, it reaches the
+        #   The lograndintic used here is that if we receive a command play in the middle, it reaches the
         #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
         #   Otherwise the robot goes to "Sleep" state after it gets tired
         while not rospy.is_shutdown():
@@ -140,15 +139,18 @@ class Normal(smach.State):
             #         print('Found the ball. Going to Play mode')
             #        return 'start_play'
                 #Random positions for the robot to move
-            self.client.wait_for_server()
-            goal = exp_assignment2.msg.PlanningGoal()
-            goal.target_pose.pose.position.x = random.randint(-7,7)
-            goal.target_pose.pose.position.y = random.randint(-7,7)
-            print('Robot going to: ',goal.target_pose.pose.position.x,
-                    ',',goal.target_pose.pose.position.y)
-            self.client.send_goal(goal)
+            self.goal.target_pose.header.frame_id = "link_chassis"
+            self.goal.target_pose.header.stamp = rospy.get_rostime()
+
+            self.goal.target_pose.pose.position.x = random.randint(-7,7)
+            self.goal.target_pose.pose.position.y = random.randint(-7,7)
+            # self.goal.target_pose.pose.position.z = 0.0
+            # self.goal.target_pose.pose.orientation.w = 0.0
+            print('Robot going to: ',self.goal.target_pose.pose.position.x,
+                    ',',self.goal.target_pose.pose.position.y)
+            self.client.send_goal(self.goal)
             self.client.wait_for_result()
-            print(self.client.get_result())
+            self.client.get_result()
             userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
             if userdata.normal_tired_counter_in >= tired_level:
                 print('Robot is tired. Going to sleep...')
@@ -342,8 +344,7 @@ def main():
     with sm:
         # Add states to the container
         smach.StateMachine.add('NORMAL', Normal(), 
-                               transitions={'go_sleep':'SLEEP', 
-                                            'start_play':'PLAY'})
+                               transitions={'go_sleep':'SLEEP'})
         smach.StateMachine.add('SLEEP', Sleep(), 
                                transitions={'wake_up':'NORMAL'})
 
