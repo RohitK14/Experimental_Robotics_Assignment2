@@ -94,7 +94,7 @@ class image_feature:
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 vel = Twist()
                 vel.angular.z = 0.005*(center[0]-400)
-                vel.linear.x = -0.01*(radius-150)
+                vel.linear.x = -0.02*(radius-200)
                 self.camera_pub.publish(0)
                 self.vel_pub.publish(vel)
 
@@ -129,7 +129,7 @@ class image_feature:
                 self.vel_pub.publish(vel)
         else:
             vel = Twist()
-            vel.angular.z = 3.14
+            vel.angular.z = -1
             self.vel_pub.publish(vel)
             self.flag_arrive = False
 

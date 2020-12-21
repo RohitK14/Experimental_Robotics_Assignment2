@@ -42,7 +42,9 @@
 	
   <!-- start gazebo client -->
   <group if="$(arg gui)">
+  
     <node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" respawn="false" output="screen"/>
+    
   </group>
 
   <arg name="ns1" value="robot"/>
@@ -71,9 +73,9 @@
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z -2.25"/>
     <node name="ball_position_server" pkg="exp_assignment2" type="go_to_point_ball.py" output="screen" />
-    <!--
+    
     <node name="position_client" pkg="exp_assignment2" type="human_command.py" output="screen" />
-  -->
+
   </group>
 
 
@@ -90,7 +92,7 @@
               --shutdown-timeout 3">
     </node>
     
-    <node name="robot_following" pkg="exp_assignment2" type="state_behavior.py" output="screen" />
+    <node name="robot_following" pkg="exp_assignment2" type="robot_following.py" output="screen" />
     
   </group>
 
