@@ -20,7 +20,7 @@ import rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_msgs.msg import Float64
 import math
 
@@ -51,6 +51,8 @@ class image_feature:
         self.camera_pub = rospy.Publisher("joint1_position_controller/command", 
                                           Float64, queue_size=1)
         self.flag_arrive = False
+        self.counter = 0
+        self.ball_lost_pub = rospy.Publisher("/lost_ball",Bool, queue_size=1)
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -74,12 +76,13 @@ class image_feature:
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         center = None
+        
         # only proceed if at least one contour was found
         if len(cnts) > 0:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
             # centroid
-            
+            self.ball_lost_pub.publish(False)
             c = max(cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
             M = cv2.moments(c)
@@ -93,14 +96,14 @@ class image_feature:
                            (0, 255, 255), 2)
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 vel = Twist()
-                vel.angular.z = 0.005*(center[0]-400)
-                vel.linear.x = -0.02*(radius-200)
+                vel.angular.z = 0.002*(center[0]-400)
+                vel.linear.x = -0.01*(radius-100)
                 self.camera_pub.publish(0)
                 self.vel_pub.publish(vel)
 
                 #Rotate head +45 and -45 degrees 
                 ##
-                if self.flag_arrive == False and vel.linear.x < 0.05:
+                if self.flag_arrive == False and vel.linear.x < 0.05 and vel.angular.z < 0.05:
                     vel.linear.x = 0
                     vel.angular.z = 0
                     self.vel_pub.publish(vel)
@@ -127,13 +130,18 @@ class image_feature:
                 self.camera_pub.publish(0)
                 vel.linear.x = 0.5
                 self.vel_pub.publish(vel)
+                self.flag_arrive = False
         else:
+            self.counter = self.counter + 1
             vel = Twist()
-            vel.angular.z = -1
+            vel.angular.z = -math.pi/2
             self.vel_pub.publish(vel)
             self.flag_arrive = False
-
-
+            if self.counter == 300:                
+                self.ball_lost_pub.publish(True)
+                print('Cannot find ball')
+                self.counter = 0
+                return None
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
 

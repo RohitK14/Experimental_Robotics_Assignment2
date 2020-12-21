@@ -61,11 +61,7 @@
         args="-urdf -model human1 -param human_description1 -x -7 -y 7 -z 0.34 -R 0 -P 0 -Y 0"/>
 
 
-    <!-- Parameters to define the sleeping position -->
-    <param name="home_x" value="5" />
-    <param name="home_y" value="7" />
-    <!-- Parameter to speed the motion while navigating -->
-    <param name="tireness_level" value="5" />
+
 
 
   
@@ -92,8 +88,16 @@
               --shutdown-timeout 3">
     </node>
     
-    <node name="robot_following" pkg="exp_assignment2" type="robot_following.py" output="screen" />
-    
+    <node name="robot_client_server" pkg="exp_assignment2" type="robot_following.py" output="screen" />
+    <!--
+    <node name="state_machine" pkg="exp_assignment2" type="state_behavior.py" output="screen" />
+-->
+
+    <!-- Parameters to define the sleeping position -->
+    <param name="home_x" value="5" />
+    <param name="home_y" value="7" />
+    <!-- Parameter to speed the motion while navigating -->
+    <param name="tireness_level" value="3" />
   </group>
 
 </launch>
