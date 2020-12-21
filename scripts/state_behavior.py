@@ -121,6 +121,10 @@ class Normal(smach.State):
             global found_image
             found_image = 0
 
+        cv2.imshow('window', image_np)
+        cv2.waitKey(2)
+
+
     def execute(self, userdata):
         ##
         #   \brief In this execute() function, the robot randomly walks in the environment until it reaches the tired_level
