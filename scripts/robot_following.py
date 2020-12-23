@@ -52,6 +52,7 @@ class image_feature:
         self.ball_found = data.data
         if self.ball_found == True:
             print("Robot_following node starting" , self.ball_found)
+            self.ball_lost_pub.publish(False)
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -81,7 +82,9 @@ class image_feature:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
             # centroid
+            # self.flag_arrive = False
             self.ball_lost_pub.publish(False)
+            self.counter = 0
             c = max(cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
             M = cv2.moments(c)
@@ -95,11 +98,11 @@ class image_feature:
                            (0, 255, 255), 2)
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 vel = Twist()
-                vel.angular.z = 0.002*(center[0]-400)
-                vel.linear.x = -0.01*(radius-100)
+                vel.angular.z = 0.005*(center[0]-400)
+                vel.linear.x = -0.01*(radius-200)
                 self.camera_pub.publish(0)
                 self.vel_pub.publish(vel)
-
+                self.counter = 0
                 #Rotate head +45 and -45 degrees 
                 ##
                 if self.flag_arrive == False and vel.linear.x < 0.05 and vel.angular.z < 0.05:
@@ -110,7 +113,7 @@ class image_feature:
                     cam_angle.data = -math.pi/4
                     self.camera_pub.publish(cam_angle)
                     cv2.imshow('window',image_np)
-                    cv2.waitKey(3)
+                    # cv2.waitKey(3)
                     time.sleep(1)
                     cam_angle.data = math.pi/4
                     self.camera_pub.publish(cam_angle)
@@ -123,25 +126,27 @@ class image_feature:
                     
                     time.sleep(1)
                     self.flag_arrive = True
-                    
+                    self.counter = 0
+          
             else:
                 vel = Twist()
                 self.camera_pub.publish(0)
                 vel.linear.x = 0.5
                 self.vel_pub.publish(vel)
                 self.flag_arrive = False
-        else:
+                self.counter = 0
+        elif self.ball_found==True:
             self.counter = self.counter + 1
             vel = Twist()
-            vel.angular.z = -math.pi/2
+            vel.angular.z = -math.pi
             self.vel_pub.publish(vel)
             self.flag_arrive = False
-            if self.counter == 350:                
+            if self.counter == 150:                
                 self.ball_lost_pub.publish(True)
                 print('Cannot find ball')
                 self.ball_found = False
                 #self.subscriber.unregister()
-                self.counter = 0
+                # self.counter = 0
                 return None
         cv2.imshow('window', image_np)
         cv2.waitKey(2)

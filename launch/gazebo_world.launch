@@ -98,7 +98,7 @@
     <param name="home_x" value="5" />
     <param name="home_y" value="7" />
     <!-- Parameter to speed the motion while navigating -->
-    <param name="tireness_level" value="3" />
+    <param name="tireness_level" value="2" />
   </group>
 
 </launch>

@@ -23,8 +23,8 @@ def command(flag=0):
 
     goal = exp_assignment2.msg.PlanningGoal()
     
-    goal.target_pose.pose.position.x = random.randint(-7,7)
-    goal.target_pose.pose.position.y = random.randint(-7,7)
+    goal.target_pose.pose.position.x = random.randint(-6,6)
+    goal.target_pose.pose.position.y = random.randint(-6,6)
     if flag==0:
         goal.target_pose.pose.position.z = 0.5
     else:
@@ -53,7 +53,7 @@ def main():
     command(1)
     
     while True:
-        n_play = random.randint(2,5)
+        n_play = random.randint(2,3)
         time_bw_calls = random.randint(30,40)
         i = 1
         print('We will play %d times' %n_play)

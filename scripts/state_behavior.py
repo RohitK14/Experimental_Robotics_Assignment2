@@ -45,7 +45,8 @@ home_fixed.x = rospy.get_param('home_x',0)
 home_fixed.y = rospy.get_param('home_y',0)
 tired_level = rospy.get_param('tireness_level',2)
 
-
+global flag_state
+flag_state = 1
 
 class Normal(smach.State):
     ##
@@ -65,7 +66,10 @@ class Normal(smach.State):
         self.subscriber = rospy.Subscriber("/robot/camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
         self.found_image = 0
-
+        self.pubBall = rospy.Publisher('/lost_ball',Bool,queue_size=1)
+        global flag_state
+        flag_state = 1
+        self.counter = 0
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -86,8 +90,8 @@ class Normal(smach.State):
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
-        
-        if len(cnts) > 0:
+        global flag_state
+        if len(cnts) > 0 and flag_state == 1:
             print('found Ball')
             c = max(cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
@@ -98,8 +102,11 @@ class Normal(smach.State):
             cv2.circle(image_np, center, 5, (0, 0, 255), -1)
             self.found_image = 1
             self.client.cancel_all_goals()
+            self.pubBall.publish(False)
+            # self.subscriber.unregister()
         else:
             self.found_image = 0
+            self.pubBall.publish(True)
 
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
@@ -111,35 +118,39 @@ class Normal(smach.State):
         #   The lograndintic used here is that if we receive a command play in the middle, it reaches the
         #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
         #   Otherwise the robot goes to "Sleep" state after it gets tired
+        userdata.normal_tired_counter_out = 0
+        self.counter = 0
         while not rospy.is_shutdown():
             rospy.loginfo('Executing state Normal')
-            # global found_image
+            global flag_state
+            flag_state = 1
             if self.found_image == 1:
                 print('Found the ball. Going to Play mode')
                 self.client.cancel_all_goals()
                 return 'start_play'
-            else:
-                if self.found_image == 1:
-                    print('Found the ball. Going to Play mode')
-                    self.client.cancel_all_goals()
-                    return 'start_play'
-                # Random positions for the robot to move
-                self.goal.target_pose.header.frame_id = "link_chassis"
-                self.goal.target_pose.header.stamp = rospy.get_rostime()
+            # Random positions for the robot to move
+            self.goal.target_pose.header.frame_id = "link_chassis"
+            self.goal.target_pose.header.stamp = rospy.get_rostime()
 
-                self.goal.target_pose.pose.position.x = random.randint(-7,7)
-                self.goal.target_pose.pose.position.y = random.randint(-7,7)
-                self.goal.target_pose.pose.position.z = 0.0
-                self.goal.target_pose.pose.orientation.w = 0.0
-                print("Robot going to: ",self.goal.target_pose.pose.position.x,
-                        ",",self.goal.target_pose.pose.position.y)
-                self.client.send_goal(self.goal)
-                self.client.wait_for_result()
-                self.client.get_result()
-                userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
-                if userdata.normal_tired_counter_in >= tired_level:
-                    print("Robot is tired. Going to sleep...")
-                    return 'go_sleep'
+            self.goal.target_pose.pose.position.x = random.randint(-6,6)
+            self.goal.target_pose.pose.position.y = random.randint(-6,6)
+            self.goal.target_pose.pose.position.z = 0.0
+            self.goal.target_pose.pose.orientation.w = 0.0
+            print("Robot going to: ",self.goal.target_pose.pose.position.x,
+                    ",",self.goal.target_pose.pose.position.y)
+            self.client.send_goal(self.goal)
+            self.client.wait_for_result()
+            self.client.get_result()
+            self.pubBall.publish(True)
+            userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
+            self.counter = self.counter + 1
+            if self.counter >= tired_level:
+                self.found_image = 0
+                self.pubBall.publish(True)
+                print("Robot is tired. Going to sleep...")
+                global flag_state
+                flag_state = 0 
+                return 'go_sleep'
                     
                     
 
@@ -163,7 +174,8 @@ class Sleep(smach.State):
         #   The logic used here is that if we receive a command play in the middle, it reaches the
         #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
         #   Otherwise the robot goes to "Sleep" state after it gets tired
-
+        global flag_state
+        flag_state = 0
         rospy.loginfo('Executing state Sleep')
         self.client.wait_for_server()
         goal = exp_assignment2.msg.PlanningGoal()
@@ -172,7 +184,7 @@ class Sleep(smach.State):
         print("Sleeping at location: ",home_fixed.x,",",home_fixed.y)
         self.client.send_goal(goal)
         self.client.wait_for_result()
-        print(self.client.get_result())
+        self.client.get_result()
         rospy.sleep(10)
         print('I am awake now')
         return 'wake_up'
