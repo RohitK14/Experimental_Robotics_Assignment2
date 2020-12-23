@@ -79,19 +79,20 @@
   <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model $(arg ns1) -param robot_description -x 5 -y 7 -Y 3.14 -z 0.05"/>
+    
+    
     <node name="robot_position_server" pkg="exp_assignment2" type="go_to_point_robot.py" output="screen" />
+    
     <rosparam file="$(find exp_assignment2)/config/motors_config.yaml" command="load" />
-
     <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" 
           args="joint_state_controller 
                 joint1_position_controller
               --shutdown-timeout 3">
     </node>
-    
-    <node name="robot_client_server" pkg="exp_assignment2" type="robot_following.py" output="screen" />
-    <!--
+   
+    <node name="robot_client_server" pkg="exp_assignment2" type="robot_following.py" output="screen" />    
     <node name="state_machine" pkg="exp_assignment2" type="state_behavior.py" output="screen" />
--->
+
 
     <!-- Parameters to define the sleeping position -->
     <param name="home_x" value="5" />

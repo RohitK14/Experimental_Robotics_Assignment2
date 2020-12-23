@@ -1,32 +1,4 @@
 #!/usr/bin/env python
-"""
-#   \file finite_state_machine.py
-#   \brief This file contains the state machine for implementing three behaviors-play, normal and sleep
-#   \author Rohit Kumar
-#   \version 0.2
-#   \date 2020-11-13
-#
-#   \param [in] width the width of the discretized world
-#   \param [in] height the height of the discretized world
-#   \param [in] home_x is the x coordinate of the position where the robot sleeps
-#   \param [in] home_y is the y coordinate of the position where the robot sleeps
-#   \param [in] tired_level decides when the robot is tired to doing the task.
-#   \param [in] speed tells the amount at which the robot travels between two points
-#
-#   \details
-#
-#   Description :
-#
-#   It uses smach libraries to implement the behaviors.
-#   Specifically, the state machine defines the transition from a state to
-#   another using the interface provided by smach.
-#
-#   
-#   The states are defined in the respective classes, and the transistions are automatically performed
-#   by the state machine from the smach libraries.
-#
-"""
-
 # To run this file go to the src folder and type
 # $ chmod +x state_behavior.py
 
@@ -72,7 +44,7 @@ home_fixed=Point()
 home_fixed.x = rospy.get_param('home_x',0)
 home_fixed.y = rospy.get_param('home_y',0)
 tired_level = rospy.get_param('tireness_level',2)
-prev_pos = Point()
+
 
 
 class Normal(smach.State):
@@ -83,7 +55,7 @@ class Normal(smach.State):
     #   \param output_keys These are possible outputs of the state.
     def __init__(self):
         smach.State.__init__(self, 
-                            outcomes=['go_sleep'],
+                            outcomes=['go_sleep','start_play'],
                             input_keys=['normal_tired_counter_in'],
                             output_keys=['normal_tired_counter_out'])
         self.client = actionlib.SimpleActionClient('/robot/reaching_goal', 
@@ -116,7 +88,16 @@ class Normal(smach.State):
         cnts = imutils.grab_contours(cnts)
         
         if len(cnts) > 0:
+            print('found Ball')
+            c = max(cnts, key=cv2.contourArea)
+            ((x, y), radius) = cv2.minEnclosingCircle(c)
+            M = cv2.moments(c)
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+            cv2.circle(image_np, (int(x), int(y)), int(radius),
+                           (0, 255, 255), 2)
+            cv2.circle(image_np, center, 5, (0, 0, 255), -1)
             self.found_image = 1
+            self.client.cancel_all_goals()
         else:
             self.found_image = 0
 
@@ -133,12 +114,14 @@ class Normal(smach.State):
         while not rospy.is_shutdown():
             rospy.loginfo('Executing state Normal')
             # global found_image
-            if self.found_image==1:
+            if self.found_image == 1:
                 print('Found the ball. Going to Play mode')
+                self.client.cancel_all_goals()
                 return 'start_play'
             else:
-                if self.found_image==1:
+                if self.found_image == 1:
                     print('Found the ball. Going to Play mode')
+                    self.client.cancel_all_goals()
                     return 'start_play'
                 # Random positions for the robot to move
                 self.goal.target_pose.header.frame_id = "link_chassis"
@@ -148,14 +131,14 @@ class Normal(smach.State):
                 self.goal.target_pose.pose.position.y = random.randint(-7,7)
                 self.goal.target_pose.pose.position.z = 0.0
                 self.goal.target_pose.pose.orientation.w = 0.0
-                print('Robot going to: ',self.goal.target_pose.pose.position.x,
-                        ',',self.goal.target_pose.pose.position.y)
+                print("Robot going to: ",self.goal.target_pose.pose.position.x,
+                        ",",self.goal.target_pose.pose.position.y)
                 self.client.send_goal(self.goal)
                 self.client.wait_for_result()
                 self.client.get_result()
                 userdata.normal_tired_counter_out = userdata.normal_tired_counter_in+1
                 if userdata.normal_tired_counter_in >= tired_level:
-                    print('Robot is tired. Going to sleep...')
+                    print("Robot is tired. Going to sleep...")
                     return 'go_sleep'
                     
                     
@@ -186,7 +169,7 @@ class Sleep(smach.State):
         goal = exp_assignment2.msg.PlanningGoal()
         goal.target_pose.pose.position.x = home_fixed.x
         goal.target_pose.pose.position.y = home_fixed.y
-        print('Sleeping at location: ',home_fixed.x,',',home_fixed.y)
+        print("Sleeping at location: ",home_fixed.x,",",home_fixed.y)
         self.client.send_goal(goal)
         self.client.wait_for_result()
         print(self.client.get_result())
@@ -206,6 +189,11 @@ class Play(smach.State):
     def __init__(self):
         smach.State.__init__(self, 
                             outcomes=['go_to_normal'])
+        self.subBall = rospy.Subscriber('/lost_ball',Bool , self.callBackLost, queue_size=1)
+        self.pubBall = rospy.Publisher('/found_ball',Bool,queue_size=1)
+        self.ballLost_ = False
+    def callBackLost(self, data):
+        self.ballLost_ = data.data
     def execute(self, userdata):
         ##
         #   In this execute(), we implement play behavior.
@@ -214,13 +202,15 @@ class Play(smach.State):
         #   the robot goes and comes back to the gesture position and waits for another gesture position until 
         #   it gets tired.
         #   At last the robot goes to Normal position.
-        
-        rospy.loginfo('Executing state Play')
-        ic = image_feature()
-
-        return 'go_to_normal'
-                  
-
+        while not rospy.is_shutdown():
+            rospy.loginfo('Executing state Play')
+            if self.ballLost_ == True:
+                self.pubBall.publish(False)
+                return 'go_to_normal'
+            else:
+                self.pubBall.publish(True)
+                
+            
 # main
 def main():
     rospy.init_node('state_behavior')
@@ -237,14 +227,15 @@ def main():
     with sm:
         # Add states to the container
         smach.StateMachine.add('NORMAL', Normal(), 
-                               transitions={'go_sleep':'SLEEP'},
+                               transitions={'go_sleep':'SLEEP',
+                                             'start_play':'PLAY'},
                                remapping={'normal_tired_counter_in':'tireness',
                                           'normal_tired_counter_out':'tireness'})
         smach.StateMachine.add('SLEEP', Sleep(), 
                                transitions={'wake_up':'NORMAL'})
 
-        # smach.StateMachine.add('PLAY', Play(), 
-        #                        transitions={'go_to_normal':'NORMAL'})
+        smach.StateMachine.add('PLAY', Play(), 
+                               transitions={'go_to_normal':'NORMAL'})
     sis = smach_ros.IntrospectionServer('robot_behavior', sm, '/SM_ROOT')
     sis.start()
     # Execute SMACH plan

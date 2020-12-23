@@ -26,13 +26,6 @@ import math
 
 VERBOSE = False
 
-def wait_time(seconds):
-	""" Function to wait the specified seconds
-	"""
-	start_time = time.time()
-	my_time = 0
-	while (my_time < seconds):
-		my_time = time.time()-start_time
 class image_feature:
 
     def __init__(self):
@@ -53,6 +46,12 @@ class image_feature:
         self.flag_arrive = False
         self.counter = 0
         self.ball_lost_pub = rospy.Publisher("/lost_ball",Bool, queue_size=1)
+        self.subBall = rospy.Subscriber('/found_ball',Bool,self.callbackFoundBall, queue_size=1)
+        self.ball_found = False
+    def callbackFoundBall(self,data):
+        self.ball_found = data.data
+        if self.ball_found == True:
+            print("Robot_following node starting" , self.ball_found)
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -78,7 +77,7 @@ class image_feature:
         center = None
         
         # only proceed if at least one contour was found
-        if len(cnts) > 0:
+        if len(cnts) > 0 and self.ball_found==True:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
             # centroid
@@ -137,20 +136,21 @@ class image_feature:
             vel.angular.z = -math.pi/2
             self.vel_pub.publish(vel)
             self.flag_arrive = False
-            if self.counter == 300:                
+            if self.counter == 350:                
                 self.ball_lost_pub.publish(True)
                 print('Cannot find ball')
+                self.ball_found = False
+                #self.subscriber.unregister()
                 self.counter = 0
                 return None
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
-
         # self.subscriber.unregister()
-
 
 def main(args):
     
     '''Initializes and cleanup ros node'''
+  
     ic = image_feature()
     try:
         rospy.spin()

@@ -49,12 +49,12 @@ def time_counter(seconds):
 def main():
 
     rospy.init_node('human_command')
-    time_counter(10)
+    time_counter(5)
     command(1)
     
     while True:
         n_play = random.randint(2,5)
-        time_bw_calls = random.randint(20,30)
+        time_bw_calls = random.randint(30,40)
         i = 1
         print('We will play %d times' %n_play)
         while i <= n_play:
