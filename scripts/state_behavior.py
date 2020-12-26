@@ -190,7 +190,8 @@ class Sleep(smach.State):
         return 'wake_up'
 
 
-
+global inPlay
+inPlay = 0
 # define state Play
 class Play(smach.State):
     ##
@@ -218,9 +219,13 @@ class Play(smach.State):
             rospy.loginfo('Executing state Play')
             if self.ballLost_ == True:
                 self.pubBall.publish(False)
+                global inPlay
+                inPlay = 0
                 return 'go_to_normal'
             else:
                 self.pubBall.publish(True)
+                global inPlay
+                inPlay = 1
                 
             
 # main

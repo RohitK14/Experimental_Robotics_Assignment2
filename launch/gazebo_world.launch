@@ -78,7 +78,7 @@
 
   <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model $(arg ns1) -param robot_description -x 5 -y 7 -Y 3.14 -z 0.05"/>
+	args="-urdf -model $(arg ns1) -param robot_description -x 6 -y 7 -Y 3.14 -z 0.05"/>
     
     
     <node name="robot_position_server" pkg="exp_assignment2" type="go_to_point_robot.py" output="screen" />
@@ -95,7 +95,7 @@
 
 
     <!-- Parameters to define the sleeping position -->
-    <param name="home_x" value="5" />
+    <param name="home_x" value="6" />
     <param name="home_y" value="7" />
     <!-- Parameter to speed the motion while navigating -->
     <param name="tireness_level" value="2" />

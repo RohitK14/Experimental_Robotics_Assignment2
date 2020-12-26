@@ -24,6 +24,8 @@ from std_msgs.msg import String, Bool
 from std_msgs.msg import Float64
 import math
 
+global inPlay
+inPlay = 1
 VERBOSE = False
 
 class image_feature:
@@ -52,7 +54,12 @@ class image_feature:
         self.ball_found = data.data
         if self.ball_found == True:
             print("Robot_following node starting" , self.ball_found)
-            self.ball_lost_pub.publish(False)
+            # self.ball_lost_pub.publish(False)
+            global inPlay
+            inPlay = 0
+        else:
+            global inPlay
+            inPlay = 1
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
@@ -135,18 +142,17 @@ class image_feature:
                 self.vel_pub.publish(vel)
                 self.flag_arrive = False
                 self.counter = 0
-        elif self.ball_found==True:
+        elif inPlay == 1:
             self.counter = self.counter + 1
             vel = Twist()
             vel.angular.z = -math.pi
             self.vel_pub.publish(vel)
             self.flag_arrive = False
-            if self.counter == 150:                
+            if self.counter == 200:                
                 self.ball_lost_pub.publish(True)
                 print('Cannot find ball')
                 self.ball_found = False
-                #self.subscriber.unregister()
-                # self.counter = 0
+                self.counter = 0
                 return None
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
