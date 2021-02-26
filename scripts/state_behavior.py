@@ -2,6 +2,21 @@
 # To run this file go to the src folder and type
 # $ chmod +x state_behavior.py
 
+
+"""
+    \package exp_assignment3
+    \file state_behavior.py
+    \brief This file contains the behaviour of a of the finite state machine.
+    \author Rohit Kumar
+    \date 25/02/2021
+
+    \param [in] home_x
+    \param [in] home_y
+    \param [in] tireness_level
+
+    Returns:
+        [Finite state diagram]: [Differnet states can be visualised with the help of smach_viewer]
+    """
 import rospy
 import smach
 import smach_ros
@@ -39,7 +54,11 @@ import roslib
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64
 
-
+"""
+Parameters:
+    [home_x]: [The launch file describes the home position of the robot. ]
+    [tireness_level]: [It tells us the number of times a task can be performed before the fatigue.]
+"""
 home_fixed=Point()
 home_fixed.x = rospy.get_param('home_x',0)
 home_fixed.y = rospy.get_param('home_y',0)
@@ -49,11 +68,21 @@ global flag_state
 flag_state = 1
 
 class Normal(smach.State):
-    ##
-    #   \brief __init__ initialises the Normal state in the smach_state
-    #   \param outcomes are the possible transitions which are either it can go to normal ot play state
-    #   \param input_keys These are possible input of the state
-    #   \param output_keys These are possible outputs of the state.
+     """
+       \brief __init__ initialises the Normal state in the smach_state
+       \param outcomes are the possible transitions which are either it can go to normal ot play state
+       \param input_keys These are possible input of the state
+       \param output_keys These are possible outputs of the state.
+
+    Subscribers:
+    	subscriber: It subscribes to /robot/camera1/image_raw/compressed
+        This is used to see if the robot can see the ball in the frame.
+    Actions:
+    	client: Client for action /robot/reaching_goal
+		The client calls the action sever to move the robot to the specified target on the plane.
+		goal: geometry_msgs.PoseStamped
+		result: geometry_msgs.Pose
+    """
     def __init__(self):
         smach.State.__init__(self, 
                             outcomes=['go_sleep','start_play'],
@@ -71,9 +100,13 @@ class Normal(smach.State):
         flag_state = 1
         self.counter = 0
     def callback(self, ros_data):
-        '''Callback function of subscribed topic. 
-        Here images get converted and features detected'''
-        
+        """
+        Callback function of subscribed topic. 
+        Here images get converted and features detected.
+
+        The function turns the varibale found_image to true when it sees the ball.
+       
+        """        
         #### direct conversion to CV2 ####
         np_arr = np.fromstring(ros_data.data, np.uint8)
         image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV >= 3.0:
@@ -113,11 +146,16 @@ class Normal(smach.State):
 
 
     def execute(self, userdata):
-        ##
-        #   \brief In this execute() function, the robot randomly walks in the environment until it reaches the tired_level
-        #   The lograndintic used here is that if we receive a command play in the middle, it reaches the
-        #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
-        #   Otherwise the robot goes to "Sleep" state after it gets tired
+        """
+        \brief In this execute() function, the robot randomly walks in the environment until it reaches the tired_level
+           The algorithm used here is that if we receive a found_image variable as true,
+           we shift to Play state.
+         Otherwise the robot goes to "Sleep" state after it gets tired with respect to tireness_level
+         The goals are cancelled as soon as the found_image is true.
+         Returns:
+            Sleep state - This is returned after tiring
+            Play state - This is returned after the dound_image is turned to true.
+        """
         userdata.normal_tired_counter_out = 0
         self.counter = 0
         while not rospy.is_shutdown():
@@ -157,23 +195,29 @@ class Normal(smach.State):
 
 # define state Sleep
 class Sleep(smach.State):
-    ##
-    #   \brief __init__ initialises the Sleep state in the smach_state
-    #   \param outcomes are the possible transition is it can to normal state by wake_up transition
-    #   \param input_keys These are possible input of the state
-    #   \param output_keys These are possible outputs of the state.
+    """
+    \brief __init__ initialises the Sleep state in the smach_state
+       \param outcomes are the possible transition is it can to normal state by wake_up transition
+
+    Args:
+        smach ([state]): The state of the finite machine is taken
+
+    Action server: 
+            client: Action server to mobve the robot to specified coordinates in the world.
+    """
     def __init__(self):
         smach.State.__init__(self, 
                             outcomes=['wake_up'])
         self.client = actionlib.SimpleActionClient('/robot/reaching_goal', 
                                                 exp_assignment2.msg.PlanningAction)    
     def execute(self, userdata):
-        ##
-        #   \brief In this execute() function, the robot goes to predefined home_fixed position
-        #   The position is published in the topic /moveToPose
-        #   The logic used here is that if we receive a command play in the middle, it reaches the
-        #   last coordinate and that is published in the rostopic /moveToPose and shifts to Play state.
-        #   Otherwise the robot goes to "Sleep" state after it gets tired
+        """\brief In this execute() function, the robot goes to predefined home_fixed position
+           
+           The robot goes to "Sleep" state after it gets tired. It stays for 10s and then shifts back to Normal state.
+
+        Returns:
+            [wake_up]: transition state 
+        """
         global flag_state
         flag_state = 0
         rospy.loginfo('Executing state Sleep')
@@ -194,11 +238,22 @@ global inPlay
 inPlay = 0
 # define state Play
 class Play(smach.State):
-    ##
-    #   \brief __init__ initializes the Play state with the outcome go_to_normal.
-    #   \param  outcomes lists the possible transitions. From play we can go to normal state.
-    #   \param input_keys It is the possible input of the state
-    #   \pram output keys It is the possible output of the state
+    """   
+        \brief __init__ initializes the Play state with the outcome go_to_normal.
+       \param  outcomes lists the possible transitions. From play we can go to normal state.
+
+    The human is considered to be stationary. The robot sees the ball and tracks in using the camera sensor.
+    When the image of the ball is not reveived, it shifts back to Normal state.
+    
+    Args:
+        smach ([state]): This state is responsible for the Play behavior of the robot
+    Subscribers: 
+        subBall: subscribes (sts_msgs.Bool) from /lost_ball
+    Publishers:
+        pubBall: writes (sts_msgs.Bool) to /lost_ball
+    Returns:
+        [go_to_normal]: when the seach is over returns back to normal state.
+    """
     def __init__(self):
         smach.State.__init__(self, 
                             outcomes=['go_to_normal'])
@@ -206,15 +261,21 @@ class Play(smach.State):
         self.pubBall = rospy.Publisher('/found_ball',Bool,queue_size=1)
         self.ballLost_ = False
     def callBackLost(self, data):
+        """It is used to record the data in ballLost_ variable 
+
+        Args:
+            data (std_msgs.Bool):  to check if the ball is lost or not
+        """
         self.ballLost_ = data.data
     def execute(self, userdata):
-        ##
-        #   In this execute(), we implement play behavior.
-        #   A random position is generated for a person. The robot goes to the person, waits for the gesture and 
-        #   and goes to gesture position.
-        #   the robot goes and comes back to the gesture position and waits for another gesture position until 
-        #   it gets tired.
-        #   At last the robot goes to Normal position.
+        """
+           In this execute(), we implement play behavior.
+          The robot tracks the ball when ballLost variable is false. When it is set to false, the transition
+          is made to Normal state.
+
+        Returns:
+            [go_to_normal]: transition state to switch back to Normal state
+                    """
         while not rospy.is_shutdown():
             rospy.loginfo('Executing state Play')
             if self.ballLost_ == True:
@@ -241,6 +302,8 @@ def main():
     sm.userdata.tireness = 0
     sm.userdata.person = Point()
     # Open the container
+    """Generating the finite state machine with NORMAL, SLEEP and PLAY state.
+    """
     with sm:
         # Add states to the container
         smach.StateMachine.add('NORMAL', Normal(), 

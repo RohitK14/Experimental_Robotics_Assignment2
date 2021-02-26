@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+\package exp_assignment2
+\file robot_following.py
+\brief This file contains the camera behaviour of the robot.
+\author Rohit Kumar
+\date 25/02/2021
+"""
 # Python libs
 import sys
 import time
@@ -24,11 +31,28 @@ from std_msgs.msg import String, Bool
 from std_msgs.msg import Float64
 import math
 
+
+"""Parameters
+Global:
+inPlay - It is used to keep track if the robot is in Play state.
+"""
 global inPlay
 inPlay = 1
 VERBOSE = False
 
 class image_feature:
+    """
+    Publishers:
+		image_pub: It publishes (sensor_msgs.CompressedImage) to /robot/output/image_raw/compressed
+		vel_pub: publishes (grometry_msgs.Twist) to /robot/cmd_vel
+		camera_pub: Publishes (std_msgs.Float64) to joint1_position_controller/command. 
+                    Used to move the neck in clockwise and anti-clockwise direction.
+        ball_lost_pub: publishes (std_msgs.Bool) to /lost_ball
+	Subscribers:
+        subBall: subscribes to (std_msgs.Bool) /found-ball
+		subscriber: subscribes to (sensor_msgs.CompressedImage) /robot/camera1/image_raw/compressed   
+   
+    """
 
     def __init__(self):
         '''Initialize ros publisher, ros subscriber'''
@@ -51,6 +75,10 @@ class image_feature:
         self.subBall = rospy.Subscriber('/found_ball',Bool,self.callbackFoundBall, queue_size=1)
         self.ball_found = False
     def callbackFoundBall(self,data):
+        """
+        This is callback to check if the ball is seen in the environment.
+        When the ball is detected, we set the in_Play variable to true.
+        """
         self.ball_found = data.data
         if self.ball_found == True:
             print("Robot_following node starting" , self.ball_found)
@@ -61,8 +89,10 @@ class image_feature:
             global inPlay
             inPlay = 1
     def callback(self, ros_data):
-        '''Callback function of subscribed topic. 
-        Here images get converted and features detected'''
+        """
+        Callback function of subscribed topic. 
+        Here images get converted and features detected
+        """
         if VERBOSE:
             print ('received image of type: "%s"' % ros_data.format)
 
@@ -86,9 +116,12 @@ class image_feature:
         
         # only proceed if at least one contour was found
         if len(cnts) > 0 and self.ball_found==True:
-            # find the largest contour in the mask, then use
-            # it to compute the minimum enclosing circle and
-            # centroid
+            """
+                find the largest contour in the mask, then use
+                it to compute the minimum enclosing circle and
+                centroid
+            """
+            
             # self.flag_arrive = False
             self.ball_lost_pub.publish(False)
             self.counter = 0
@@ -113,6 +146,8 @@ class image_feature:
                 #Rotate head +45 and -45 degrees 
                 ##
                 if self.flag_arrive == False and vel.linear.x < 0.05 and vel.angular.z < 0.05:
+                    """When the robot reaches the ball, it rotates the neck 45 and 45 degrees.
+                    """
                     vel.linear.x = 0
                     vel.angular.z = 0
                     self.vel_pub.publish(vel)
@@ -160,7 +195,9 @@ class image_feature:
 
 def main(args):
     
-    '''Initializes and cleanup ros node'''
+    """
+    Initializes and cleanup ros node
+    """
   
     ic = image_feature()
     try:
