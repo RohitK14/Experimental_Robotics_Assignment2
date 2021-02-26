@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>robot_following module &mdash; Experimental Assignment 2 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Experimental Assignment 2 0.1 documentation" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-robot_following">
+<span id="robot-following-module"></span><h1>robot_following module<a class="headerlink" href="#module-robot_following" title="Permalink to this headline">¶</a></h1>
+<p>package exp_assignment2</p>
+<p>ile robot_following.py
+rief This file contains the camera behaviour of the robot.
+uthor Rohit Kumar
+date 25/02/2021</p>
+<dl class="class">
+<dt id="robot_following.image_feature">
+<em class="property">class </em><code class="descclassname">robot_following.</code><code class="descname">image_feature</code><a class="headerlink" href="#robot_following.image_feature" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Publishers:</dt>
+<dd><blockquote class="first">
+<div><p>image_pub: It publishes (sensor_msgs.CompressedImage) to /robot/output/image_raw/compressed
+vel_pub: publishes (grometry_msgs.Twist) to /robot/cmd_vel
+camera_pub: Publishes (std_msgs.Float64) to joint1_position_controller/command.</p>
+<blockquote>
+<div>Used to move the neck in clockwise and anti-clockwise direction.</div></blockquote>
+</div></blockquote>
+<p>ball_lost_pub: publishes (std_msgs.Bool) to /lost_ball
+Subscribers:
+subBall: subscribes to (std_msgs.Bool) /found-ball</p>
+<blockquote class="last">
+<div>subscriber: subscribes to (sensor_msgs.CompressedImage) /robot/camera1/image_raw/compressed</div></blockquote>
+</dd>
+</dl>
+<dl class="method">
+<dt id="robot_following.image_feature.callback">
+<code class="descname">callback</code><span class="sig-paren">(</span><em>ros_data</em><span class="sig-paren">)</span><a class="headerlink" href="#robot_following.image_feature.callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback function of subscribed topic. 
+Here images get converted and features detected</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="robot_following.image_feature.callbackFoundBall">
+<code class="descname">callbackFoundBall</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#robot_following.image_feature.callbackFoundBall" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is callback to check if the ball is seen in the environment.
+When the ball is detected, we set the in_Play variable to true.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="robot_following.main">
+<code class="descclassname">robot_following.</code><code class="descname">main</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#robot_following.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes and cleanup ros node</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/robot_following.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Rohit Kumar.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="../_sources/source/robot_following.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
